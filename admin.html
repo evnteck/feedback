@@ -135,6 +135,9 @@
   .q{font-size:14px;background:var(--bg);border-radius:10px;padding:8px 11px;white-space:pre-wrap;word-break:break-word}
   .q b{display:block;font-size:12px;color:var(--muted);font-weight:500}
   .q.bad{background:#FFF4F6}
+  .ref{background:linear-gradient(135deg,#FCFAFF,#F3ECFA);border:1px dashed #CDB6EA;border-radius:12px;padding:9px 11px;display:flex;flex-direction:column;gap:6px}
+  .ref b{font-size:12px;color:var(--lavender)}
+  .ref>span{font-weight:600;font-size:14px}
   .flags{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--green)}
   .empty{text-align:center;padding:50px 16px;color:var(--muted);grid-column:1/-1}
 
@@ -225,7 +228,7 @@
         <select id="period"><option value="all">كل الفترات</option><option value="7">آخر 7 أيام</option><option value="30">آخر 30 يوم</option>
           <option value="month">هذا الشهر</option><option value="custom">فترة مخصصة</option></select></div>
       <div><label for="rating">التقييم</label>
-        <select id="rating"><option value="">الكل</option><option value="low">يحتاج متابعة (3 أو أقل)</option>
+        <select id="rating"><option value="">الكل</option><option value="low">يحتاج متابعة (3 أو أقل)</option><option value="ref">فيها ترشيح عميل جديد</option>
           <option value="5">5 نجوم</option><option value="4">4 نجوم</option><option value="3">3 نجوم</option><option value="2">نجمتان</option><option value="1">نجمة</option></select></div>
       <div><label for="sort">الترتيب</label>
         <select id="sort"><option value="new">الأحدث أولاً</option><option value="old">الأقدم أولاً</option><option value="hi">الأعلى تقييماً</option><option value="lo">الأقل تقييماً</option></select></div>
@@ -259,8 +262,8 @@ const $=id=>document.getElementById(id);
 const DEMO=!CONFIG.SCRIPT_URL.startsWith('http');
 const CRIT=[['quality','جودة الشاشات'],['delivery','التوصيل والتركيب'],['support','الدعم الفني'],['staff','تعامل الفريق'],['value','القيمة مقابل السعر']];
 const COLS=[['timestamp','التاريخ والوقت'],['overall','التقييم العام'],['nps','درجة التوصية'],...CRIT,['eventType','نوع الفعالية'],
-  ['screenType','نوع الشاشة'],['eventDate','تاريخ الفعالية'],['liked','ما أعجبه'],['improve','مقترحات التحسين'],['name','الاسم'],
-  ['company','الجهة'],['phone','الجوال'],['contactOk','يوافق على التواصل'],['publishOk','يوافق على النشر'],['lang','اللغة'],['source','المصدر']];
+  ['screenType','نوع الشاشة'],['eventDate','تاريخ الفعالية'],['feedback','ملاحظات العميل'],['name','الاسم'],
+  ['company','الجهة'],['phone','الجوال'],['contactOk','يوافق على التواصل'],['publishOk','يوافق على النشر'],['referral','جهة/شخص مرشّح'],['referralPhone','رقم المرشّح'],['lang','اللغة'],['source','المصدر']];
 let key='', data=[], timer=null;
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -277,7 +280,12 @@ async function fetchRows(){
     body:JSON.stringify({action:'list',key})});
   const j=await r.json();
   if(!j.ok) throw new Error(j.error||'error');
-  return j.rows||[];
+  return (j.rows||[]).map(norm);
+}
+// الردود القديمة كان فيها حقلين (ما أعجبه / مقترحات التحسين) — ندمجهم في حقل الملاحظات
+function norm(r){
+  if(!r.feedback) r.feedback=[r.liked,r.improve].filter(Boolean).join('\n');
+  return r;
 }
 async function load(quiet){
   const b=$('refreshBtn'); b.classList.add('spin'); b.disabled=true;
@@ -336,8 +344,9 @@ function filtered(){
     const t=new Date(r.timestamp);
     if(from&&t<from) return false; if(to&&t>to) return false;
     const o=Number(r.overall);
-    if(rt==='low'&&o>3) return false; if(rt&&rt!=='low'&&o!==Number(rt)) return false;
-    if(q&&![r.name,r.company,r.phone,r.liked,r.improve,r.eventType,r.screenType,r.source].join(' ').toLowerCase().includes(q)) return false;
+    if(rt==='low'&&o>3) return false; if(rt==='ref'&&!r.referral&&!r.referralPhone) return false;
+    if(rt&&rt!=='low'&&rt!=='ref'&&o!==Number(rt)) return false;
+    if(q&&![r.name,r.company,r.phone,r.feedback,r.referral,r.referralPhone,r.eventType,r.screenType,r.source].join(' ').toLowerCase().includes(q)) return false;
     return true;
   }).sort((a,b)=> s==='old'?new Date(a.timestamp)-new Date(b.timestamp)
     : s==='hi'?b.overall-a.overall||new Date(b.timestamp)-new Date(a.timestamp)
@@ -385,8 +394,9 @@ function draw(){
       ${r.phone?`<div class="contact"><a href="tel:${esc(String(r.phone).replace(/[^\d+]/g,''))}">اتصال <span class="ph">${esc(r.phone)}</span></a>${wa?`<a class="wa" href="${wa}" target="_blank" rel="noopener">واتساب</a>`:''}</div>`:''}
       ${(r.eventType||r.screenType||r.eventDate||r.source)?`<div class="tags">${r.eventType?`<span>${esc(r.eventType)}</span>`:''}${r.screenType?`<span>${esc(r.screenType)}</span>`:''}${r.eventDate?`<span>فعالية ${esc(evDate(r.eventDate))}</span>`:''}${r.source?`<span>المصدر: ${esc(r.source)}</span>`:''}</div>`:''}
       ${cr?`<div class="crit">${cr}</div>`:''}
-      ${r.liked?`<p class="q"><b>ما أعجبه</b>${esc(r.liked)}</p>`:''}
-      ${r.improve?`<p class="q bad"><b>مقترحات التحسين</b>${esc(r.improve)}</p>`:''}
+      ${r.feedback?`<p class="q ${o<=3?'bad':''}"><b>ملاحظات العميل</b>${esc(r.feedback)}</p>`:''}
+      ${(r.referral||r.referralPhone)?`<div class="ref"><b>✦ ترشيح عميل جديد</b><span>${esc(r.referral)||'بدون اسم'}</span>
+        ${r.referralPhone?`<div class="contact"><a href="tel:${esc(String(r.referralPhone).replace(/[^\d+]/g,''))}">اتصال <span class="ph">${esc(r.referralPhone)}</span></a>${waLink(r.referralPhone)?`<a class="wa" href="${waLink(r.referralPhone)}" target="_blank" rel="noopener">واتساب</a>`:''}</div>`:''}</div>`:''}
       ${(r.contactOk==='نعم'||r.publishOk==='نعم')?`<div class="flags">${r.contactOk==='نعم'?'<span>✓ يوافق على التواصل</span>':''}${r.publishOk==='نعم'?'<span>✓ يوافق على النشر</span>':''}</div>`:''}
     </article>`}).join('')
     : `<div class="empty">${data.length?'لا توجد نتائج مطابقة للفلاتر':'لا توجد تقييمات بعد'}</div>`;
@@ -411,13 +421,14 @@ function demoRows(){
   const names=['أحمد البلوشي','سارة الحارثي','محمد الكندي','مريم الهنائي','خالد الرواحي','نورة العامري','سالم المعمري','ريم الشكيلي','','يوسف الفارسي'];
   const comps=['شركة الأفق للمعارض','جامعة السلطان قابوس','','وزارة الثقافة','مجموعة الندى','','فندق الموج'];
   const ev=['مؤتمر','معرض','حفل / مناسبة','فعالية شركة','تعليم / تدريب'], sc=['شاشة لمس تفاعلية','شاشة LED','كشك تفاعلي (Kiosk)','جدار شاشات (Video Wall)','عرض هولوجرافي'];
-  const lk=['سرعة التركيب ووضوح الشاشة','الفريق متعاون جداً','الشاشة جذبت الزوار بشكل كبير',''], im=['','','التأخر في الوصول نصف ساعة','نتمنى خيارات محتوى أكثر'];
+  const fbk=['سرعة التركيب ووضوح الشاشة كانت ممتازة','الفريق متعاون جداً، ونتمنى خيارات محتوى أكثر','الشاشة جذبت الزوار بشكل كبير',''], bad=['الشاشة ممتازة لكن التأخر في الوصول نصف ساعة أثّر علينا','نتمنى دعم فني أسرع أثناء الفعالية'];
+  const refs=[['مجموعة الريادة للفعاليات','+968 9234 5678'],['كلية عُمان للإدارة',''],['فندق البستان','+968 9876 1234']];
   let s=7; const R=()=>(s=(s*9301+49297)%233280)/233280;
   return Array.from({length:24},(_,i)=>{const o=[5,5,4,5,4,3,5,2,4,5][i%10], d=new Date(Date.now()-R()*55*864e5), ed=new Date(d-R()*3*864e5);
     const ph=R()>.35?'+968 9'+String(Math.floor(R()*1e7)).padStart(7,'0'):'';
     return {timestamp:d.toISOString(),overall:o,nps:Math.min(10,Math.max(0,o*2-Math.floor(R()*3))),
       quality:R()>.3?Math.min(5,o+Math.round(R())):'',delivery:R()>.3?Math.max(1,o-Math.round(R())):'',support:R()>.4?o:'',staff:R()>.3?5:'',value:R()>.4?Math.max(1,o-1):'',
-      eventType:ev[i%5],screenType:sc[(i*3)%5],eventDate:ed.toISOString().slice(0,10),liked:o>=4?lk[i%4]:'',improve:o<=3?im[2+i%2]:im[i%4],
+      eventType:ev[i%5],screenType:sc[(i*3)%5],eventDate:ed.toISOString().slice(0,10),feedback:o<=3?bad[i%2]:fbk[i%4],referral:i%5===1?refs[i%3][0]:'',referralPhone:i%5===1?refs[i%3][1]:'',
       name:names[i%10],company:comps[i%7],phone:ph,contactOk:ph?'نعم':'لا',publishOk:o>=4&&R()>.5?'نعم':'لا',lang:'ar',source:['whatsapp','qr',''][i%3]}});
 }
 
