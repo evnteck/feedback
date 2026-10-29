@@ -157,6 +157,10 @@
   @keyframes tilePop{0%{transform:scale(.9)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
   @media(max-width:360px){.chips.tiles{grid-template-columns:repeat(3,1fr)}.chips.tiles span b{font-size:12px}}
 
+  .quick-note{display:flex;align-items:center;justify-content:center;gap:6px;margin:4px 0 12px;font-size:14px;color:var(--muted)}
+  .quick-note svg{width:17px;height:17px;flex:none;fill:none;stroke:var(--lavender);stroke-width:2;stroke-linecap:round}
+  .quick-note b{color:var(--royal-purple)}
+
   /* ============ زر الإرسال جاهز ============ */
   .submit{position:relative;overflow:hidden}
   .submit.ready{background:linear-gradient(120deg,var(--lavender),var(--royal-purple) 55%,#B0306F);animation:readyPulse 1.8s ease-in-out infinite}
@@ -544,7 +548,7 @@
 
     <form id="fb" novalidate>
       <div class="card">
-        <div class="card-h"><span class="num">01</span><div><h2><span data-i18n="s1"></span> <span class="req">*</span></h2><p class="hint" data-i18n="s1h"></p></div></div>
+        <div class="card-h"><span class="num">01</span><div><h2 data-i18n="s1"></h2><p class="hint" data-i18n="s1h"></p></div></div>
         <div class="overall">
           <div class="stars big" data-name="overall"></div>
           <div class="lbl" id="overallLbl"></div>
@@ -557,12 +561,13 @@
       </div>
 
       <div class="card">
-        <div class="card-h"><span class="num">03</span><div><h2><span data-i18n="s3"></span> <span class="req">*</span></h2><p class="hint" data-i18n="s3h"></p></div></div>
+        <div class="card-h"><span class="num">03</span><div><h2 data-i18n="s3"></h2><p class="hint" data-i18n="s3h"></p></div></div>
         <div class="nps" id="nps"></div>
         <div class="nps-legend"><span data-i18n="npsLo"></span><span data-i18n="npsHi"></span></div>
       </div>
 
-      <div class="card">
+      <!-- القسم 04 (تفاصيل الفعالية) يعبّيه المشرف من صفحة الأدمن — مخفي عن العميل -->
+      <div class="card" hidden>
         <div class="card-h"><span class="num">04</span><div><h2 data-i18n="s4"></h2><p class="hint" data-i18n="s4h"></p></div></div>
         <div class="field">
           <label class="f" data-i18n="eventType"></label>
@@ -598,31 +603,32 @@
       </div>
 
       <div class="card">
-        <div class="card-h"><span class="num">05</span><div><h2 data-i18n="s5"></h2><p class="hint" data-i18n="s5h"></p></div></div>
+        <div class="card-h"><span class="num">04</span><div><h2 data-i18n="s5"></h2><p class="hint" data-i18n="s5h"></p></div></div>
         <div class="field" style="margin-bottom:0">
           <label class="f" for="feedback" data-i18n="feedback"></label>
           <textarea id="feedback" name="feedback" data-ph="feedbackPh" style="min-height:140px"></textarea>
         </div>
       </div>
 
+      <!-- بياناتك: العميل يعبّي الاسم والجوال (اختياري). الجهة يعبّيها المشرف من الأدمن -->
       <div class="card">
-        <div class="card-h"><span class="num">06</span><div><h2 data-i18n="s6"></h2><p class="hint" data-i18n="s6h"></p></div></div>
-        <div class="row">
+        <div class="card-h"><span class="num">05</span><div><h2 data-i18n="s6"></h2><p class="hint" data-i18n="s6h"></p></div></div>
+        <div class="row" style="margin-bottom:-14px">
           <div class="field">
             <label class="f" for="name" data-i18n="name"></label>
             <input type="text" id="name" name="name" autocomplete="name">
           </div>
           <div class="field">
+            <label class="f" for="phone" data-i18n="phone"></label>
+            <input type="tel" id="phone" name="phone" dir="ltr" placeholder="+968 9XXX XXXX" autocomplete="tel">
+          </div>
+          <div class="field" hidden>
             <label class="f" for="company" data-i18n="company"></label>
             <input type="text" id="company" name="company" autocomplete="organization">
           </div>
         </div>
-        <div class="field">
-          <label class="f" for="phone" data-i18n="phone"></label>
-          <input type="tel" id="phone" name="phone" dir="ltr" placeholder="+968 9XXX XXXX" autocomplete="tel">
-        </div>
-        <label class="check"><input type="checkbox" id="contactOk" name="contactOk"><span class="box"><svg class="tick" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span data-i18n="contactOk"></span></label>
-        <label class="check" style="margin-top:10px"><input type="checkbox" id="publishOk" name="publishOk"><span class="box"><svg class="tick" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span data-i18n="publishOk"></span></label>
+        <label class="check" hidden><input type="checkbox" id="contactOk" name="contactOk"><span class="box"><svg class="tick" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span data-i18n="contactOk"></span></label>
+        <label class="check" style="margin-top:10px" hidden><input type="checkbox" id="publishOk" name="publishOk"><span class="box"><svg class="tick" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span data-i18n="publishOk"></span></label>
       </div>
 
       <div class="card ref">
@@ -632,7 +638,7 @@
           <g class="p2"><circle cx="52" cy="28" r="8.5" fill="#F1637A"/><circle cx="52" cy="25.4" r="2.7" fill="#fff"/><path d="M47.4 33.5a4.6 4.6 0 0 1 9.2 0z" fill="#fff"/></g>
           <use href="#spark" x="-5" y="-5" width="10" height="10" fill="#F5A623"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#refPath"/></animateMotion></use>
         </svg>
-        <div class="card-h"><span class="num">07</span><div><h2 data-i18n="s7"></h2><p class="hint" data-i18n="s7h"></p>
+        <div class="card-h"><span class="num">06</span><div><h2 data-i18n="s7"></h2><p class="hint" data-i18n="s7h"></p>
           <div class="ref-opts">
             <span class="opt-badge" data-i18n="optional"></span>
             <button type="button" class="skip-btn" id="refSkip" aria-pressed="false"><span data-i18n="refSkip"></span></button>          </div>
@@ -655,6 +661,7 @@
 
       <input type="text" name="website" id="website" class="sr" tabindex="-1" autocomplete="off" aria-hidden="true">
 
+      <p class="quick-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span data-i18n="quickNote"></span></p>
       <div class="ready-hint" id="readyHint" aria-live="polite"><span data-i18n="readyHint"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></div>
       <button class="submit" id="submitBtn" type="submit"><span data-i18n="send"></span><svg><use href="#spark"/></svg></button>
       <div class="err" id="err"></div>
@@ -697,10 +704,11 @@ const T = {
   ar:{
     topline:'تقييم الخدمة', eyebrow:'تأجير الشاشات التفاعلية',
     title:'كيف كانت <em>تجربتك</em> معنا؟',
-    subtitle:'شكراً لاختيارك Evnteck. رأيك يأخذ أقل من دقيقتين ويساعدنا نصنع تجارب تفاعلية أفضل في فعالياتك القادمة.',
-    s1:'التقييم العام', s1h:'بشكل عام، ما مدى رضاك عن الخدمة؟',
+    subtitle:'شكراً لاختيارك Evnteck. التقييم سريع جداً ولن يستغرق سوى <b>10 ثوانٍ</b> — وكل الأسئلة اختيارية.',
+    quickNote:'سريع جداً — <b>10 ثوانٍ</b> فقط · كل الأسئلة اختيارية',
+    s1:'التقييم العام', s1h:'اختياري — بشكل عام، ما مدى رضاك عن الخدمة؟',
     s2:'قيّم جوانب الخدمة', s2h:'اختياري — يساعدنا نعرف وين نتميز ووين نتحسن.',
-    s3:'هل تنصح بنا؟', s3h:'ما مدى احتمال أن توصي بـ Evnteck لصديق أو زميل؟',
+    s3:'هل تنصح بنا؟', s3h:'اختياري — ما مدى احتمال أن توصي بـ Evnteck لصديق أو زميل؟',
     npsLo:'غير محتمل أبداً', npsHi:'محتمل جداً',
     s4:'تفاصيل الفعالية', s4h:'اختياري', eventType:'نوع الفعالية', screen:'نوع الشاشة المستأجرة', date:'تاريخ الفعالية',
     datePh:'اختر التاريخ', quick:[[0,'اليوم'],[1,'أمس'],[7,'قبل أسبوع']], clear:'مسح',
@@ -732,10 +740,11 @@ const T = {
   en:{
     topline:'Feedback', eyebrow:'Interactive Screen Rentals',
     title:'How was your <em>experience</em>?',
-    subtitle:'Thank you for choosing Evnteck. This takes under two minutes and helps us create better interactive experiences for your next event.',
-    s1:'Overall rating', s1h:'Overall, how satisfied are you with our service?',
+    subtitle:'Thank you for choosing Evnteck. It\'s super quick — only <b>10 seconds</b> — and every question is optional.',
+    quickNote:'Super quick — just <b>10 seconds</b> · every question is optional',
+    s1:'Overall rating', s1h:'Optional — overall, how satisfied are you with our service?',
     s2:'Rate our service', s2h:'Optional — helps us see where we shine and where to improve.',
-    s3:'Would you recommend us?', s3h:'How likely are you to recommend Evnteck to a friend or colleague?',
+    s3:'Would you recommend us?', s3h:'Optional — how likely are you to recommend Evnteck to a friend or colleague?',
     npsLo:'Not at all likely', npsHi:'Extremely likely',
     s4:'Event details', s4h:'Optional', eventType:'Event type', screen:'Screen rented', date:'Event date',
     datePh:'Pick a date', quick:[[0,'Today'],[1,'Yesterday'],[7,'A week ago']], clear:'Clear',
@@ -832,34 +841,35 @@ function tilePop(l){const sp=l.querySelector('span'); sp.classList.remove('pop')
 function overallLbl(){document.getElementById('overallLbl').textContent=T[lang].lbl[state.overall]}
 
 /* =================== التقدم بنظام XP =================== */
-// النقاط: سؤال منفرد 120 · كل سؤال داخل قسم متعدد 40 · مكافأة إكمال القسم المتعدد 30
-// (3×120 + 13×40 + 4×30 = 1000 XP) — وزر «لا أعرف أحداً» في القسم 07 يعطي نفس نقاط القسم كامل (110)
-const XP_MAX=1000, XP_SINGLE=120, XP_ITEM=40, XP_BONUS=30, XP_REF_SKIP=2*XP_ITEM+XP_BONUS;
-const singleXP=i=>i===6?XP_REF_SKIP:XP_SINGLE;
+// النقاط (الأقسام الظاهرة للعميل فقط): سؤال منفرد 200 · كل جانب في «جوانب الخدمة» 60 · مكافأة إكمالها 100
+// منفرد 150 (×3) · جوانب الخدمة 5×40 + مكافأة 90 · بياناتك 2×40 + 50 · الترشيح 2×40 + 50 = 1000 XP
+// «لا أعرف أحداً» يعطي نفس نقاط الترشيح كامل (130)
+const XP_MAX=1000, XP_SINGLE=150, XP_ITEM=40, XP_BONUS_CRIT=90, XP_BONUS=50, XP_REF_SKIP=2*XP_ITEM+XP_BONUS;
+const bonusXP=i=>i===1?XP_BONUS_CRIT:XP_BONUS;
+const singleXP=i=>i===5?XP_REF_SKIP:XP_SINGLE;
 let prevDone=null, prevItems=null, shownXP=0, msgIdx=-1;
 // الأقسام اللي فيها أكثر من سؤال: كل سؤال له ✓ صغيرة، والقسم يكتمل لما تكتمل كلها
 function cardItems(){
   const f=document.getElementById('fb'), v=n=>f[n].value.trim(), lab=id=>document.querySelector(`label[for="${id}"]`);
-  return [
+  return [   // نفس ترتيب البطاقات الظاهرة: 01 التقييم العام · 02 جوانب الخدمة · 03 التوصية · 04 الملاحظات · 05 بياناتك · 06 الترشيح
     null,
     [...document.querySelectorAll('#criteria .crit')].map((row,i)=>({el:row.querySelector('.t'), ok:!!state.ratings[T[lang].crit[i][0]]})),
     null,
-    [{el:$('eventChips').previousElementSibling, ok:!!state.event}, {el:lab('screenType'), ok:!!v('screenType')}, {el:lab('dpBtn'), ok:!!v('eventDate')}],
     null,
-    [{el:lab('name'), ok:!!v('name')}, {el:lab('company'), ok:!!v('company')}, {el:lab('phone'), ok:!!v('phone')}],
+    [{el:lab('name'), ok:!!v('name')}, {el:lab('phone'), ok:!!v('phone')}],
     state.refSkip ? null : [{el:lab('referral'), ok:!!v('referral')}, {el:lab('referralPhone'), ok:!!v('referralPhone')}]
   ];
 }
 function singleDone(i){
-  return i===0 ? state.overall>0 : i===2 ? state.nps!==null : i===6 ? state.refSkip : !!$('feedback').value.trim();
+  return i===0 ? state.overall>0 : i===2 ? state.nps!==null : i===5 ? state.refSkip : !!$('feedback').value.trim();
 }
 const currentXP=()=>(prevDone||[]).reduce((s,d,i)=>{
   const it=prevItems[i];
-  return s+(it ? it.filter(Boolean).length*XP_ITEM+(d?XP_BONUS:0) : (d?singleXP(i):0));
+  return s+(it ? it.filter(Boolean).length*XP_ITEM+(d?bonusXP(i):0) : (d?singleXP(i):0));
 },0);
 
 function progress(){
-  const items=cardItems(), cards=[...document.querySelectorAll('#fb>.card')];
+  const items=cardItems(), cards=[...document.querySelectorAll('#fb>.card:not([hidden])')];
   const done=items.map((it,i)=>it?it.every(x=>x.ok):singleDone(i));
   let gained=false; const completed=[];
   cards.forEach((c,i)=>{
@@ -887,8 +897,8 @@ function completeCard(c,i){
   if(!prevDone[i]) return;                          // العميل مسح الجواب أثناء الحركة
   c.classList.add('done'); c.classList.remove('just-done'); void c.offsetWidth; c.classList.add('just-done');
   const multi=!!cardItems()[i];
-  flyXP(c.querySelector('.num'),multi?XP_BONUS:singleXP(i),multi);
-  if(i===6) confetti(c.querySelector('.num'));
+  flyXP(c.querySelector('.num'),multi?bonusXP(i):singleXP(i),multi);
+  if(i===5) confetti(c.querySelector('.num'));
 }
 // الصحوح الصغيرة تطير وتتجمع في ✓ واحدة على رقم القسم
 function mergeChecks(c,cb){
@@ -1094,8 +1104,6 @@ document.getElementById('fb').addEventListener('submit',async e=>{
   const t=T[lang], f=e.target, err=document.getElementById('err'), btn=document.getElementById('submitBtn');
   err.textContent='';
   if(f.website.value) return;
-  if(!state.overall){err.textContent=t.needOverall;shake('.overall');return}
-  if(state.nps===null){err.textContent=t.needNps;shake('#nps');return}
 
   const data={
     lang, overall:state.overall, nps:state.nps,
