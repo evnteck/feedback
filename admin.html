@@ -139,6 +139,21 @@
   .ref b{font-size:12px;color:var(--lavender)}
   .ref>span{font-weight:600;font-size:14px}
   .flags{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--green)}
+  /* بيانات الفعالية والعميل — يعبّيها المشرف */
+  .badge.miss{background:#FFF2D9;color:#9A5B00}
+  .edit-btn{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:10px;cursor:pointer;
+    border:1px dashed var(--lavender);background:#fff;color:var(--royal-purple);font:inherit;font-size:13px;font-weight:600;transition:.15s}
+  .edit-btn:hover{background:var(--soft)}
+  .edit-btn.need{border-style:solid;border-color:#F5C46B;background:#FFF8EA;color:#8A5300}
+  .resp.editing{border-color:var(--lavender);box-shadow:0 0 0 3px rgba(147,95,199,.15)}
+  .edit{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;background:var(--bg);border:1px solid #DCC8F2;animation:up .3s both}
+  .edit .e-title{font-size:13px;color:var(--royal-purple)}
+  .eg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .eg label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+  .eg input,.eg select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:15px;color:var(--ink);outline:none}
+  .eg input:focus,.eg select:focus{border-color:var(--lavender);box-shadow:0 0 0 3px rgba(147,95,199,.15)}
+  .ea{display:flex;gap:8px}
+  @media(max-width:560px){.eg{grid-template-columns:1fr}.eg input,.eg select{font-size:16px}}
   .empty{text-align:center;padding:50px 16px;color:var(--muted);grid-column:1/-1}
 
   .toast{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translate(-50%,120px);background:var(--ink);color:#fff;
@@ -177,7 +192,7 @@
     .list{grid-template-columns:1fr 1fr!important;gap:8px}
     .resp{padding:10px;gap:5px;font-size:12px}
     .q{font-size:12px;padding:5px 8px}
-    .contact a.wa{display:none}
+    .contact a.wa,.edit-btn,.edit{display:none!important}
   }
 </style>
 </head>
@@ -228,7 +243,7 @@
         <select id="period"><option value="all">كل الفترات</option><option value="7">آخر 7 أيام</option><option value="30">آخر 30 يوم</option>
           <option value="month">هذا الشهر</option><option value="custom">فترة مخصصة</option></select></div>
       <div><label for="rating">التقييم</label>
-        <select id="rating"><option value="">الكل</option><option value="low">يحتاج متابعة (3 أو أقل)</option><option value="ref">فيها ترشيح عميل جديد</option>
+        <select id="rating"><option value="">الكل</option><option value="low">يحتاج متابعة (3 أو أقل)</option><option value="missing">ينقصها بيانات الفعالية/العميل</option><option value="ref">فيها ترشيح عميل جديد</option>
           <option value="5">5 نجوم</option><option value="4">4 نجوم</option><option value="3">3 نجوم</option><option value="2">نجمتان</option><option value="1">نجمة</option></select></div>
       <div><label for="sort">الترتيب</label>
         <select id="sort"><option value="new">الأحدث أولاً</option><option value="old">الأقدم أولاً</option><option value="hi">الأعلى تقييماً</option><option value="lo">الأقل تقييماً</option></select></div>
@@ -264,7 +279,7 @@ const CRIT=[['quality','جودة الشاشات'],['delivery','التوصيل و
 const COLS=[['timestamp','التاريخ والوقت'],['overall','التقييم العام'],['nps','درجة التوصية'],...CRIT,['eventType','نوع الفعالية'],
   ['screenType','نوع الشاشة'],['eventDate','تاريخ الفعالية'],['feedback','ملاحظات العميل'],['name','الاسم'],
   ['company','الجهة'],['phone','الجوال'],['contactOk','يوافق على التواصل'],['publishOk','يوافق على النشر'],['referral','جهة/شخص مرشّح'],['referralPhone','رقم المرشّح'],['lang','اللغة'],['source','المصدر']];
-let key='', data=[], timer=null;
+let key='', data=[], timer=null, editing=null;   // editing = رقم الصف المفتوح للتعديل
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>v===''||v==null?null:Number(v);
@@ -293,7 +308,7 @@ async function load(quiet){
     const before=data.length;
     data=await fetchRows();
     $('updated').textContent='آخر تحديث '+fmt(new Date(),{hour:'numeric',minute:'2-digit'});
-    draw();
+    if(editing===null) draw();
     if(quiet && data.length>before && before) toast('وصلك '+(data.length-before)+' تقييم جديد ✦');
     else if(!quiet) toast('تم التحديث');
   }catch(e){ if(e.message==='unauthorized') return logout(); if(!quiet) toast('تعذر التحديث، تحقق من الاتصال'); throw e }
@@ -345,7 +360,8 @@ function filtered(){
     if(from&&t<from) return false; if(to&&t>to) return false;
     const o=Number(r.overall);
     if(rt==='low'&&o>3) return false; if(rt==='ref'&&!r.referral&&!r.referralPhone) return false;
-    if(rt&&rt!=='low'&&rt!=='ref'&&o!==Number(rt)) return false;
+    if(rt==='missing'&&hasInfo(r)) return false;
+    if(rt&&!['low','ref','missing'].includes(rt)&&o!==Number(rt)) return false;
     if(q&&![r.name,r.company,r.phone,r.feedback,r.referral,r.referralPhone,r.eventType,r.screenType,r.source].join(' ').toLowerCase().includes(q)) return false;
     return true;
   }).sort((a,b)=> s==='old'?new Date(a.timestamp)-new Date(b.timestamp)
@@ -361,6 +377,28 @@ function filtered(){
 const stars=n=>Array.from({length:5},(_,i)=>`<svg class="${i<n?'on':''}"><use href="#spark"/></svg>`).join('');
 const evDate=v=>{const d=new Date(String(v).slice(0,10)+'T00:00'); return isNaN(d)?v:fmt(d,{day:'numeric',month:'short',year:'numeric'})};
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+/* بيانات الفعالية والعميل (القسمين 4 و 6) — المشرف يعبّيها هنا بدل العميل */
+const INFO=['eventType','screenType','eventDate','name','company','phone'];
+const EV_LIST=['مؤتمر','معرض','حفل / مناسبة','فعالية شركة','تعليم / تدريب','أخرى'];
+const SC_LIST=['شاشة لمس تفاعلية','شاشة LED','كشك تفاعلي (Kiosk)','سبورة ذكية','جدار شاشات (Video Wall)','عرض هولوجرافي','أخرى'];
+const hasInfo=r=>INFO.some(k=>r[k]!==''&&r[k]!=null);
+const opts=(list,v)=>'<option value="">— اختر —</option>'+list.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('')
+  +(v&&!list.includes(v)?`<option selected>${esc(v)}</option>`:'');
+function editor(r){
+  const today=new Date().toISOString().slice(0,10);
+  return `<form class="edit" data-row="${r._row}">
+    <b class="e-title">بيانات الفعالية والعميل</b>
+    <div class="eg">
+      <label>نوع الفعالية<select name="eventType">${opts(EV_LIST,r.eventType)}</select></label>
+      <label>نوع الشاشة<select name="screenType">${opts(SC_LIST,r.screenType)}</select></label>
+      <label>تاريخ الفعالية<input type="date" name="eventDate" max="${today}" value="${esc(String(r.eventDate||'').slice(0,10))}"></label>
+      <label>اسم العميل<input name="name" autocomplete="off" value="${esc(r.name)}"></label>
+      <label>الجهة / الشركة<input name="company" autocomplete="off" value="${esc(r.company)}"></label>
+      <label>رقم الجوال<input name="phone" type="tel" dir="ltr" autocomplete="off" placeholder="+968 9XXX XXXX" value="${esc(r.phone)}"></label>
+    </div>
+    <div class="ea"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-act="cancel">إلغاء</button></div>
+  </form>`;
+}
 function waLink(p){let d=String(p).replace(/\D/g,''); if(d.startsWith('00'))d=d.slice(2); if(d.length===8)d='968'+d; return d.length>=8?'https://wa.me/'+d:''}
 
 function draw(){
@@ -381,14 +419,17 @@ function draw(){
   $('crit').innerHTML=CRIT.map(([k,l])=>{const v=avg(rows.map(r=>num(r[k])).filter(x=>x));
     return `<div class="meter ${v&&v<3.5?'low':''}"><span>${l}</span><div class="tr"><i style="width:${v?v/5*100:0}%"></i></div><em>${v?v.toFixed(1):'—'}</em></div>`}).join('');
 
-  $('count').textContent=n+(n===data.length?'':' من '+data.length);
+  const miss=data.filter(r=>!hasInfo(r)).length;
+  $('count').textContent=n+(n===data.length?'':' من '+data.length)+(miss?` · ${miss} ينقصها بيانات`:'');
   $('list').innerHTML=n?rows.map((r,i)=>{
     const o=Number(r.overall), nv=num(r.nps), t=new Date(r.timestamp), wa=r.phone?waLink(r.phone):'';
     const cr=CRIT.filter(([k])=>r[k]!==''&&r[k]!=null).map(([k,l])=>`<span>${l}: <b>${esc(r[k])}</b></span>`).join('');
-    return `<article class="resp ${o<=3?'low':o===5?'top':''}" style="animation-delay:${Math.min(i,12)*.03}s">
+    const info=hasInfo(r), ed=editing===r._row;
+    return `<article class="resp ${o<=3?'low':o===5?'top':''}${ed?' editing':''}" style="animation-delay:${Math.min(i,12)*.03}s">
       <div class="r-top"><div class="stars">${stars(o)}</div>
         ${nv===null?'':`<span class="badge ${nv>=9?'p':nv<=6?'d':''}">توصية ${nv}/10</span>`}
         ${o<=3?'<span class="badge alert">يحتاج متابعة</span>':''}
+        ${info?'':'<span class="badge miss">ينقصها بيانات</span>'}
         <time>${isNaN(t)?'':fmt(t,{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'})}</time></div>
       <div class="who"><b>${esc(r.name)||'بدون اسم'}</b>${r.company?` <span>· ${esc(r.company)}</span>`:''}</div>
       ${r.phone?`<div class="contact"><a href="tel:${esc(String(r.phone).replace(/[^\d+]/g,''))}">اتصال <span class="ph">${esc(r.phone)}</span></a>${wa?`<a class="wa" href="${wa}" target="_blank" rel="noopener">واتساب</a>`:''}</div>`:''}
@@ -398,9 +439,38 @@ function draw(){
       ${(r.referral||r.referralPhone)?`<div class="ref"><b>✦ ترشيح عميل جديد</b><span>${esc(r.referral)||'بدون اسم'}</span>
         ${r.referralPhone?`<div class="contact"><a href="tel:${esc(String(r.referralPhone).replace(/[^\d+]/g,''))}">اتصال <span class="ph">${esc(r.referralPhone)}</span></a>${waLink(r.referralPhone)?`<a class="wa" href="${waLink(r.referralPhone)}" target="_blank" rel="noopener">واتساب</a>`:''}</div>`:''}</div>`:''}
       ${(r.contactOk==='نعم'||r.publishOk==='نعم')?`<div class="flags">${r.contactOk==='نعم'?'<span>✓ يوافق على التواصل</span>':''}${r.publishOk==='نعم'?'<span>✓ يوافق على النشر</span>':''}</div>`:''}
+      ${ed ? editor(r) : `<button type="button" class="edit-btn${info?'':' need'}" data-act="edit" data-row="${r._row}">${info?'✎ تعديل بيانات الفعالية والعميل':'＋ إضافة بيانات الفعالية والعميل'}</button>`}
     </article>`}).join('')
     : `<div class="empty">${data.length?'لا توجد نتائج مطابقة للفلاتر':'لا توجد تقييمات بعد'}</div>`;
 }
+
+/* =================== تعديل بيانات الفعالية والعميل =================== */
+$('list').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return;
+  if(b.dataset.act==='edit'){
+    editing=Number(b.dataset.row); draw();
+    const f=document.querySelector(`form.edit[data-row="${editing}"]`); if(f) f.querySelector('select').focus();
+  }
+  if(b.dataset.act==='cancel'){ editing=null; draw() }
+});
+$('list').addEventListener('submit',async e=>{
+  const f=e.target.closest('form.edit'); if(!f) return; e.preventDefault();
+  const r=data.find(x=>x._row===Number(f.dataset.row)); if(!r) return;
+  const fields={}; INFO.forEach(k=>fields[k]=f.elements[k].value.trim());
+  const btn=f.querySelector('[type=submit]'); btn.disabled=true; btn.textContent='جارٍ الحفظ...';
+  try{
+    if(!DEMO){
+      const res=await fetch(CONFIG.SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({action:'update',key,row:r._row,timestamp:r.timestamp,fields})});
+      const j=await res.json(); if(!j.ok) throw new Error(j.error||'error');
+    }
+    Object.assign(r,fields); editing=null; draw(); toast('تم حفظ البيانات ✓');
+  }catch(x){
+    btn.disabled=false; btn.textContent='حفظ';
+    if(x.message==='unauthorized') return logout();
+    toast(x.message==='row_changed'?'الصف تغيّر في الشيت — اضغط «تحديث» وحاول مرة ثانية':'تعذر الحفظ، تحقق من الاتصال');
+  }
+});
 
 /* =================== التصدير =================== */
 $('pdfBtn').onclick=()=>{
@@ -426,10 +496,11 @@ function demoRows(){
   let s=7; const R=()=>(s=(s*9301+49297)%233280)/233280;
   return Array.from({length:24},(_,i)=>{const o=[5,5,4,5,4,3,5,2,4,5][i%10], d=new Date(Date.now()-R()*55*864e5), ed=new Date(d-R()*3*864e5);
     const ph=R()>.35?'+968 9'+String(Math.floor(R()*1e7)).padStart(7,'0'):'';
-    return {timestamp:d.toISOString(),overall:o,nps:Math.min(10,Math.max(0,o*2-Math.floor(R()*3))),
+    const blank=i%3===0;   // بعض الردود الجديدة بدون بيانات (المشرف يعبّيها)
+    return {_row:i+2,timestamp:d.toISOString(),overall:o,nps:Math.min(10,Math.max(0,o*2-Math.floor(R()*3))),
       quality:R()>.3?Math.min(5,o+Math.round(R())):'',delivery:R()>.3?Math.max(1,o-Math.round(R())):'',support:R()>.4?o:'',staff:R()>.3?5:'',value:R()>.4?Math.max(1,o-1):'',
-      eventType:ev[i%5],screenType:sc[(i*3)%5],eventDate:ed.toISOString().slice(0,10),feedback:o<=3?bad[i%2]:fbk[i%4],referral:i%5===1?refs[i%3][0]:'',referralPhone:i%5===1?refs[i%3][1]:'',
-      name:names[i%10],company:comps[i%7],phone:ph,contactOk:ph?'نعم':'لا',publishOk:o>=4&&R()>.5?'نعم':'لا',lang:'ar',source:['whatsapp','qr',''][i%3]}});
+      eventType:blank?'':ev[i%5],screenType:blank?'':sc[(i*3)%5],eventDate:blank?'':ed.toISOString().slice(0,10),feedback:o<=3?bad[i%2]:fbk[i%4],referral:i%5===1?refs[i%3][0]:'',referralPhone:i%5===1?refs[i%3][1]:'',
+      name:blank?'':names[i%10],company:blank?'':comps[i%7],phone:blank?'':ph,contactOk:ph?'نعم':'لا',publishOk:o>=4&&R()>.5?'نعم':'لا',lang:'ar',source:['whatsapp','qr',''][i%3]}});
 }
 
 /* =================== البدء =================== */
