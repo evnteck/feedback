@@ -610,9 +610,9 @@
         </div>
       </div>
 
-      <!-- بياناتك: العميل يعبّي الاسم والجوال (اختياري). الجهة يعبّيها المشرف من الأدمن -->
-      <div class="card">
-        <div class="card-h"><span class="num">05</span><div><h2 data-i18n="s6"></h2><p class="hint" data-i18n="s6h"></p></div></div>
+      <!-- بياناتك (الاسم + الجوال + الجهة): يعبّيها المشرف من صفحة الأدمن — مخفي عن العميل -->
+      <div class="card" hidden>
+        <div class="card-h"><span class="num">06</span><div><h2 data-i18n="s6"></h2><p class="hint" data-i18n="s6h"></p></div></div>
         <div class="row" style="margin-bottom:-14px">
           <div class="field">
             <label class="f" for="name" data-i18n="name"></label>
@@ -638,7 +638,7 @@
           <g class="p2"><circle cx="52" cy="28" r="8.5" fill="#F1637A"/><circle cx="52" cy="25.4" r="2.7" fill="#fff"/><path d="M47.4 33.5a4.6 4.6 0 0 1 9.2 0z" fill="#fff"/></g>
           <use href="#spark" x="-5" y="-5" width="10" height="10" fill="#F5A623"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#refPath"/></animateMotion></use>
         </svg>
-        <div class="card-h"><span class="num">06</span><div><h2 data-i18n="s7"></h2><p class="hint" data-i18n="s7h"></p>
+        <div class="card-h"><span class="num">05</span><div><h2 data-i18n="s7"></h2><p class="hint" data-i18n="s7h"></p>
           <div class="ref-opts">
             <span class="opt-badge" data-i18n="optional"></span>
             <button type="button" class="skip-btn" id="refSkip" aria-pressed="false"><span data-i18n="refSkip"></span></button>          </div>
@@ -842,26 +842,25 @@ function overallLbl(){document.getElementById('overallLbl').textContent=T[lang].
 
 /* =================== التقدم بنظام XP =================== */
 // النقاط (الأقسام الظاهرة للعميل فقط): سؤال منفرد 200 · كل جانب في «جوانب الخدمة» 60 · مكافأة إكمالها 100
-// منفرد 150 (×3) · جوانب الخدمة 5×40 + مكافأة 90 · بياناتك 2×40 + 50 · الترشيح 2×40 + 50 = 1000 XP
-// «لا أعرف أحداً» يعطي نفس نقاط الترشيح كامل (130)
-const XP_MAX=1000, XP_SINGLE=150, XP_ITEM=40, XP_BONUS_CRIT=90, XP_BONUS=50, XP_REF_SKIP=2*XP_ITEM+XP_BONUS;
+// منفرد 160 (×3) · جوانب الخدمة 5×50 + مكافأة 110 · الترشيح 2×50 + مكافأة 60 = 1000 XP
+// «لا أعرف أحداً» يعطي نفس نقاط الترشيح كامل (160)
+const XP_MAX=1000, XP_SINGLE=160, XP_ITEM=50, XP_BONUS_CRIT=110, XP_BONUS=60, XP_REF_SKIP=2*XP_ITEM+XP_BONUS;
 const bonusXP=i=>i===1?XP_BONUS_CRIT:XP_BONUS;
-const singleXP=i=>i===5?XP_REF_SKIP:XP_SINGLE;
+const singleXP=i=>i===4?XP_REF_SKIP:XP_SINGLE;
 let prevDone=null, prevItems=null, shownXP=0, msgIdx=-1;
 // الأقسام اللي فيها أكثر من سؤال: كل سؤال له ✓ صغيرة، والقسم يكتمل لما تكتمل كلها
 function cardItems(){
   const f=document.getElementById('fb'), v=n=>f[n].value.trim(), lab=id=>document.querySelector(`label[for="${id}"]`);
-  return [   // نفس ترتيب البطاقات الظاهرة: 01 التقييم العام · 02 جوانب الخدمة · 03 التوصية · 04 الملاحظات · 05 بياناتك · 06 الترشيح
+  return [   // نفس ترتيب البطاقات الظاهرة: 01 التقييم العام · 02 جوانب الخدمة · 03 التوصية · 04 الملاحظات · 05 الترشيح
     null,
     [...document.querySelectorAll('#criteria .crit')].map((row,i)=>({el:row.querySelector('.t'), ok:!!state.ratings[T[lang].crit[i][0]]})),
     null,
     null,
-    [{el:lab('name'), ok:!!v('name')}, {el:lab('phone'), ok:!!v('phone')}],
     state.refSkip ? null : [{el:lab('referral'), ok:!!v('referral')}, {el:lab('referralPhone'), ok:!!v('referralPhone')}]
   ];
 }
 function singleDone(i){
-  return i===0 ? state.overall>0 : i===2 ? state.nps!==null : i===5 ? state.refSkip : !!$('feedback').value.trim();
+  return i===0 ? state.overall>0 : i===2 ? state.nps!==null : i===4 ? state.refSkip : !!$('feedback').value.trim();
 }
 const currentXP=()=>(prevDone||[]).reduce((s,d,i)=>{
   const it=prevItems[i];
@@ -898,7 +897,7 @@ function completeCard(c,i){
   c.classList.add('done'); c.classList.remove('just-done'); void c.offsetWidth; c.classList.add('just-done');
   const multi=!!cardItems()[i];
   flyXP(c.querySelector('.num'),multi?bonusXP(i):singleXP(i),multi);
-  if(i===5) confetti(c.querySelector('.num'));
+  if(i===4) confetti(c.querySelector('.num'));
 }
 // الصحوح الصغيرة تطير وتتجمع في ✓ واحدة على رقم القسم
 function mergeChecks(c,cb){
